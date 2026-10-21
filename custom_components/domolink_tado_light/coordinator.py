@@ -295,25 +295,65 @@ class DomoLinkTadoLightCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
     # =========================================================================
-    # ACTIONS GLOBALES ET SERVICE CALLS
+    # ACTIONS GLOBALES ET SERVICE CALLS (TADO OFFICIEL -> FALLBACK DOMOLINK)
     # =========================================================================
 
+    def _has_official_tado(self) -> bool:
+        """Test presence of official Tado integration."""
+        if "tado" in self.hass.config.components:
+            return True
+        if self.hass.config_entries.async_entries("tado"):
+            return True
+        return False
+
+    def _has_domolink_tado(self) -> bool:
+        """Test presence of DomoLink-Tado integration (fallback)."""
+        if "domolink_tado" in self.hass.config.components:
+            return True
+        if self.hass.config_entries.async_entries("domolink_tado"):
+            return True
+        return False
+
     async def async_resume_all_schedules(self) -> None:
-        """Resume schedule (AUTO mode) across all configured climate entities."""
-        tasks = []
-        for room in self.rooms_config:
-            climate_id = room.get(CONF_ROOM_CLIMATE_ENTITY)
-            if climate_id:
-                tasks.append(
-                    self.hass.services.async_call(
-                        CLIMATE_DOMAIN,
-                        SERVICE_SET_HVAC_MODE,
-                        {ATTR_ENTITY_ID: climate_id, ATTR_HVAC_MODE: HVACMode.AUTO},
-                        blocking=False,
-                    )
+        """Resume schedule (AUTO mode) across all configured climate entities.
+        Prioritizes official Tado climate modes, with fallback to DomoLink-Tado bulk services.
+        """
+        # 1. Test présence Tado officiel
+        if self._has_official_tado():
+            _LOGGER.debug("Reprise plannings via Tado officiel (climate.set_hvac_mode auto)")
+            tasks = [
+                self.hass.services.async_call(
+                    CLIMATE_DOMAIN,
+                    SERVICE_SET_HVAC_MODE,
+                    {ATTR_ENTITY_ID: room[CONF_ROOM_CLIMATE_ENTITY], ATTR_HVAC_MODE: HVACMode.AUTO},
+                    blocking=False,
                 )
-        if tasks:
-            await asyncio.gather(*tasks)
+                for room in self.rooms_config
+                if room.get(CONF_ROOM_CLIMATE_ENTITY)
+            ]
+            if tasks:
+                await asyncio.gather(*tasks)
+
+        # 2. En fallback, passage sur DomoLink-Tado
+        elif self._has_domolink_tado() and self.hass.services.has_service("domolink_tado", "resume_all_schedules"):
+            _LOGGER.debug("Reprise plannings via DomoLink-Tado (domolink_tado.resume_all_schedules)")
+            await self.hass.services.async_call("domolink_tado", "resume_all_schedules", blocking=False)
+
+        # 3. Fallback standard sur toutes les entités configurées
+        else:
+            tasks = [
+                self.hass.services.async_call(
+                    CLIMATE_DOMAIN,
+                    SERVICE_SET_HVAC_MODE,
+                    {ATTR_ENTITY_ID: room[CONF_ROOM_CLIMATE_ENTITY], ATTR_HVAC_MODE: HVACMode.AUTO},
+                    blocking=False,
+                )
+                for room in self.rooms_config
+                if room.get(CONF_ROOM_CLIMATE_ENTITY)
+            ]
+            if tasks:
+                await asyncio.gather(*tasks)
+
         self.eco_mode_active = False
         self.async_set_updated_data(self._calculate_all())
 
@@ -334,21 +374,45 @@ class DomoLinkTadoLightCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.async_set_updated_data(self._calculate_all())
 
     async def async_turn_off_all(self) -> None:
-        """Turn off (frost protection) all configured climate entities."""
-        tasks = []
-        for room in self.rooms_config:
-            climate_id = room.get(CONF_ROOM_CLIMATE_ENTITY)
-            if climate_id:
-                tasks.append(
-                    self.hass.services.async_call(
-                        CLIMATE_DOMAIN,
-                        SERVICE_SET_HVAC_MODE,
-                        {ATTR_ENTITY_ID: climate_id, ATTR_HVAC_MODE: HVACMode.OFF},
-                        blocking=False,
-                    )
+        """Turn off (frost protection) all configured climate entities.
+        Prioritizes official Tado climate modes, with fallback to DomoLink-Tado bulk services.
+        """
+        # 1. Test présence Tado officiel
+        if self._has_official_tado():
+            _LOGGER.debug("Mise hors-gel via Tado officiel (climate.set_hvac_mode off)")
+            tasks = [
+                self.hass.services.async_call(
+                    CLIMATE_DOMAIN,
+                    SERVICE_SET_HVAC_MODE,
+                    {ATTR_ENTITY_ID: room[CONF_ROOM_CLIMATE_ENTITY], ATTR_HVAC_MODE: HVACMode.OFF},
+                    blocking=False,
                 )
-        if tasks:
-            await asyncio.gather(*tasks)
+                for room in self.rooms_config
+                if room.get(CONF_ROOM_CLIMATE_ENTITY)
+            ]
+            if tasks:
+                await asyncio.gather(*tasks)
+
+        # 2. En fallback, passage sur DomoLink-Tado
+        elif self._has_domolink_tado() and self.hass.services.has_service("domolink_tado", "set_all_off"):
+            _LOGGER.debug("Mise hors-gel via DomoLink-Tado (domolink_tado.set_all_off)")
+            await self.hass.services.async_call("domolink_tado", "set_all_off", blocking=False)
+
+        # 3. Fallback standard
+        else:
+            tasks = [
+                self.hass.services.async_call(
+                    CLIMATE_DOMAIN,
+                    SERVICE_SET_HVAC_MODE,
+                    {ATTR_ENTITY_ID: room[CONF_ROOM_CLIMATE_ENTITY], ATTR_HVAC_MODE: HVACMode.OFF},
+                    blocking=False,
+                )
+                for room in self.rooms_config
+                if room.get(CONF_ROOM_CLIMATE_ENTITY)
+            ]
+            if tasks:
+                await asyncio.gather(*tasks)
+
         self.eco_mode_active = False
         self.async_set_updated_data(self._calculate_all())
 
@@ -415,35 +479,72 @@ class DomoLinkTadoLightCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.async_set_updated_data(self._calculate_all())
 
     async def async_set_eco_mode(self, enabled: bool) -> None:
-        """Enable or disable global Eco mode."""
+        """Enable or disable global Eco mode: test official Tado first, then DomoLink-Tado as fallback."""
         self.eco_mode_active = enabled
 
         if enabled:
-            # Sauvegarder les états et appliquer la consigne éco
-            tasks = []
-            for room in self.rooms_config:
-                climate_id = room.get(CONF_ROOM_CLIMATE_ENTITY)
-                rid = room.get(CONF_ROOM_ID) or room.get(CONF_ROOM_NAME, "")
-                if not climate_id:
-                    continue
+            # 1. Test présence Tado officiel
+            if self._has_official_tado():
+                tasks = []
+                for room in self.rooms_config:
+                    climate_id = room.get(CONF_ROOM_CLIMATE_ENTITY)
+                    rid = room.get(CONF_ROOM_ID) or room.get(CONF_ROOM_NAME, "")
+                    if not climate_id:
+                        continue
 
-                state = self.hass.states.get(climate_id)
-                if state:
-                    self._pre_eco_states[rid] = {
-                        "mode": state.state,
-                        "temp": state.attributes.get(ATTR_TEMPERATURE),
-                    }
+                    state = self.hass.states.get(climate_id)
+                    if state:
+                        self._pre_eco_states[rid] = {
+                            "mode": state.state,
+                            "temp": state.attributes.get(ATTR_TEMPERATURE),
+                        }
 
-                tasks.append(
-                    self.hass.services.async_call(
-                        CLIMATE_DOMAIN,
-                        SERVICE_SET_TEMPERATURE,
-                        {ATTR_ENTITY_ID: climate_id, ATTR_TEMPERATURE: self.default_eco_temp},
-                        blocking=False,
+                    tasks.append(
+                        self.hass.services.async_call(
+                            CLIMATE_DOMAIN,
+                            SERVICE_SET_TEMPERATURE,
+                            {ATTR_ENTITY_ID: climate_id, ATTR_TEMPERATURE: self.default_eco_temp},
+                            blocking=False,
+                        )
                     )
+                if tasks:
+                    await asyncio.gather(*tasks)
+
+            # 2. En fallback, passage sur DomoLink-Tado
+            elif self._has_domolink_tado() and self.hass.services.has_service("domolink_tado", "set_eco_all"):
+                await self.hass.services.async_call(
+                    "domolink_tado",
+                    "set_eco_all",
+                    {"temperature": self.default_eco_temp},
+                    blocking=False,
                 )
-            if tasks:
-                await asyncio.gather(*tasks)
+
+            # 3. Fallback standard
+            else:
+                tasks = []
+                for room in self.rooms_config:
+                    climate_id = room.get(CONF_ROOM_CLIMATE_ENTITY)
+                    rid = room.get(CONF_ROOM_ID) or room.get(CONF_ROOM_NAME, "")
+                    if not climate_id:
+                        continue
+
+                    state = self.hass.states.get(climate_id)
+                    if state:
+                        self._pre_eco_states[rid] = {
+                            "mode": state.state,
+                            "temp": state.attributes.get(ATTR_TEMPERATURE),
+                        }
+
+                    tasks.append(
+                        self.hass.services.async_call(
+                            CLIMATE_DOMAIN,
+                            SERVICE_SET_TEMPERATURE,
+                            {ATTR_ENTITY_ID: climate_id, ATTR_TEMPERATURE: self.default_eco_temp},
+                            blocking=False,
+                        )
+                    )
+                if tasks:
+                    await asyncio.gather(*tasks)
         else:
             # Reprise du planning auto partout
             await self.async_resume_all_schedules()

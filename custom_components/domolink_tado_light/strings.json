@@ -12,6 +12,14 @@
           "smart_boost_duration": "Durée du Boost Intelligent (minutes)"
         }
       },
+      "auto_detect": {
+        "title": "Détection automatique Tado",
+        "description": "Nous avons détecté {count} thermostat(s) depuis **{source}**.\n\nVoulez-vous les importer automatiquement dans DomoLink-Tado-Light ?",
+        "data": {
+          "use_auto_detected": "Importer automatiquement les thermostats détectés",
+          "selected_rooms": "Thermostats à importer"
+        }
+      },
       "add_room": {
         "title": "Ajouter une pièce / zone",
         "description": "Associez votre thermostat existant à vos capteurs d'ambiance et de fenêtre ({rooms_count} pièce(s) enregistrée(s)).",
