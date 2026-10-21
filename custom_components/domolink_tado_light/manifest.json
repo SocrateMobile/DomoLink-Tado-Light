@@ -1,0 +1,17 @@
+{
+  "domain": "domolink_tado_light",
+  "name": "DomoLink-Tado-Light",
+  "codeowners": [
+    "@SocrateMobile",
+    "@jflavigne"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "climate"
+  ],
+  "documentation": "https://github.com/SocrateMobile/DomoLink-Tado-Light",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/SocrateMobile/DomoLink-Tado-Light/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

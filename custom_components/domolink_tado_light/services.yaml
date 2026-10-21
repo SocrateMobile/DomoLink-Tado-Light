@@ -1,0 +1,49 @@
+resume_all_schedules:
+  name: Reprendre programmation partout
+  description: Bascule l'ensemble des thermostats configurés en mode automatique pour reprendre leur programmation.
+
+turn_off_all:
+  name: Tout éteindre (Hors-gel)
+  description: Éteint l'ensemble des thermostats configurés pour passer en mode hors-gel.
+
+smart_boost:
+  name: Boost Intelligent
+  description: Applique une consigne de confort temporaire à une pièce spécifique ou à toute la maison avec minuterie de reprise automatique.
+  fields:
+    room_id:
+      name: Identifiant de la pièce (Optionnel)
+      description: Laisser vide pour appliquer le boost à toute la maison.
+      example: "salon"
+      selector:
+        text:
+    temperature:
+      name: Température de consigne (°C)
+      description: Température souhaitée pendant le boost.
+      example: 22.0
+      selector:
+        number:
+          min: 15.0
+          max: 30.0
+          step: 0.5
+          unit_of_measurement: "°C"
+    duration_minutes:
+      name: Durée du boost (minutes)
+      description: Durée avant reprise automatique de la programmation.
+      example: 30
+      selector:
+        number:
+          min: 5
+          max: 240
+          step: 5
+          unit_of_measurement: "min"
+
+set_eco_mode:
+  name: Définir le mode Éco Global
+  description: Active ou désactive le mode Éco global sur tous les thermostats.
+  fields:
+    enabled:
+      name: Activé
+      description: Vrai pour activer le mode éco, faux pour reprendre la programmation normale.
+      required: true
+      selector:
+        boolean:

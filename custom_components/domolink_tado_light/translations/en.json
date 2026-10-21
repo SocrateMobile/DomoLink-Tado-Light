@@ -1,0 +1,74 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "General Configuration DomoLink-Tado-Light",
+        "description": "Configure global comfort settings and outdoor weather sensors.",
+        "data": {
+          "outdoor_temp_entity": "Outdoor temperature sensor",
+          "outdoor_humidity_entity": "Outdoor humidity sensor",
+          "default_eco_temp": "Global Eco mode temperature (°C)",
+          "smart_boost_temp": "Smart Boost temperature (°C)",
+          "smart_boost_duration": "Smart Boost duration (minutes)"
+        }
+      },
+      "add_room": {
+        "title": "Add a room / zone",
+        "description": "Link your existing thermostat with ambient and window sensors ({rooms_count} room(s) configured).",
+        "data": {
+          "name": "Room name",
+          "climate_entity": "Thermostat entity (Climate)",
+          "temp_entity": "External ambient temperature sensor (Optional)",
+          "humidity_entity": "External humidity sensor (Optional)",
+          "window_entity": "Window opening sensor (Optional)",
+          "heating_rate": "Estimated heating rate (°C/h)",
+          "action": "Next action"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This integration is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage DomoLink-Tado-Light",
+        "description": "What would you like to configure?",
+        "data": {
+          "choice": "Action"
+        }
+      },
+      "general": {
+        "title": "General settings",
+        "description": "Update global Eco and Boost settings.",
+        "data": {
+          "outdoor_temp_entity": "Outdoor temperature sensor",
+          "outdoor_humidity_entity": "Outdoor humidity sensor",
+          "default_eco_temp": "Global Eco mode temperature (°C)",
+          "smart_boost_temp": "Smart Boost temperature (°C)",
+          "smart_boost_duration": "Smart Boost duration (minutes)"
+        }
+      },
+      "add_room": {
+        "title": "Add a room",
+        "description": "Configure the entities for the new room.",
+        "data": {
+          "name": "Room name",
+          "climate_entity": "Thermostat entity (Climate)",
+          "temp_entity": "Ambient temperature sensor",
+          "humidity_entity": "Humidity sensor",
+          "window_entity": "Window sensor",
+          "heating_rate": "Heating rate (°C/h)"
+        }
+      },
+      "remove_room": {
+        "title": "Remove a room",
+        "description": "Choose which room to remove.",
+        "data": {
+          "room_to_remove": "Room to remove"
+        }
+      }
+    }
+  }
+}
