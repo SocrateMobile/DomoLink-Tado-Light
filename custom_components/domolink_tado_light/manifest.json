@@ -8,7 +8,7 @@
   "dependencies": [
     "climate"
   ],
-  "documentation": "https://github.com/SocrateMobile/DomoLink-Tado-Light",
+  "documentation": "https://socratemobile.fr/integration.html?id=domolink-tado-light",
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/SocrateMobile/DomoLink-Tado-Light/issues",

@@ -1,5 +1,10 @@
 # DomoLink-Tado-Light 🍃
 
+[![Documentation Officielle](https://img.shields.io/badge/Documentation-socratemobile.fr-06b6d4.svg?logo=googlechrome&logoColor=white)](https://socratemobile.fr/integration.html?id=domolink-tado-light)
+
+> 🌐 **Site officiel & Documentation complète** : Retrouvez le guide d'installation pas à pas, les entités supportées et les exemples d'automatisations sur [socratemobile.fr](https://socratemobile.fr/integration.html?id=domolink-tado-light).
+
+
 [![HACS Validation](https://img.shields.io/badge/HACS-Custom%20%26%20Default-41BDF5.svg?style=flat-square)](https://github.com/hacs/integration)
 [![IoT Class](https://img.shields.io/badge/IoT%20Class-Calculated-green.svg?style=flat-square)](https://developers.home-assistant.io/docs/creating_integration_manifest/#iot-class)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
