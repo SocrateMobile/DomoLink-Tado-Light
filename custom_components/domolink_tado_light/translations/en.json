@@ -24,6 +24,14 @@
           "heating_rate": "Estimated heating rate (°C/h)",
           "action": "Next action"
         }
+      },
+      "auto_detect": {
+        "title": "Automatic Tado Detection",
+        "description": "We detected {count} thermostat(s) from **{source}**.\n\nDo you want to automatically import them into DomoLink-Tado-Light?",
+        "data": {
+          "use_auto_detected": "Automatically import detected thermostats",
+          "selected_rooms": "Thermostats to import"
+        }
       }
     },
     "abort": {

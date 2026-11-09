@@ -45,27 +45,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    # Enregistrement des services Home Assistant
-    async def handle_resume_all(call: ServiceCall) -> None:
-        await coordinator.async_resume_all_schedules()
+    # Enregistrement unique des services Home Assistant (multi-entries safe)
+    if not hass.services.has_service(DOMAIN, SERVICE_RESUME_ALL):
+        async def handle_resume_all(call: ServiceCall) -> None:
+            for coord in hass.data.get(DOMAIN, {}).values():
+                if isinstance(coord, DomoLinkTadoLightCoordinator):
+                    await coord.async_resume_all_schedules()
 
-    async def handle_turn_off_all(call: ServiceCall) -> None:
-        await coordinator.async_turn_off_all()
+        async def handle_turn_off_all(call: ServiceCall) -> None:
+            for coord in hass.data.get(DOMAIN, {}).values():
+                if isinstance(coord, DomoLinkTadoLightCoordinator):
+                    await coord.async_turn_off_all()
 
-    async def handle_smart_boost(call: ServiceCall) -> None:
-        room_id = call.data.get("room_id")
-        temp = call.data.get("temperature")
-        dur = call.data.get("duration_minutes")
-        await coordinator.async_smart_boost(room_id, temp, dur)
+        async def handle_smart_boost(call: ServiceCall) -> None:
+            room_id = call.data.get("room_id")
+            temp = call.data.get("temperature")
+            dur = call.data.get("duration_minutes")
+            for coord in hass.data.get(DOMAIN, {}).values():
+                if isinstance(coord, DomoLinkTadoLightCoordinator):
+                    await coord.async_smart_boost(room_id, temp, dur)
 
-    async def handle_set_eco(call: ServiceCall) -> None:
-        enabled = call.data.get("enabled", True)
-        await coordinator.async_set_eco_mode(enabled)
+        async def handle_set_eco(call: ServiceCall) -> None:
+            enabled = call.data.get("enabled", True)
+            for coord in hass.data.get(DOMAIN, {}).values():
+                if isinstance(coord, DomoLinkTadoLightCoordinator):
+                    await coord.async_set_eco_mode(enabled)
 
-    hass.services.async_register(DOMAIN, SERVICE_RESUME_ALL, handle_resume_all)
-    hass.services.async_register(DOMAIN, SERVICE_TURN_OFF_ALL, handle_turn_off_all)
-    hass.services.async_register(DOMAIN, SERVICE_SMART_BOOST, handle_smart_boost, schema=SCHEMA_SMART_BOOST)
-    hass.services.async_register(DOMAIN, SERVICE_SET_ECO_MODE, handle_set_eco, schema=SCHEMA_SET_ECO_MODE)
+        hass.services.async_register(DOMAIN, SERVICE_RESUME_ALL, handle_resume_all)
+        hass.services.async_register(DOMAIN, SERVICE_TURN_OFF_ALL, handle_turn_off_all)
+        hass.services.async_register(DOMAIN, SERVICE_SMART_BOOST, handle_smart_boost, schema=SCHEMA_SMART_BOOST)
+        hass.services.async_register(DOMAIN, SERVICE_SET_ECO_MODE, handle_set_eco, schema=SCHEMA_SET_ECO_MODE)
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
@@ -76,8 +85,15 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
     if unload_ok:
-        coordinator: DomoLinkTadoLightCoordinator = hass.data[DOMAIN].pop(entry.entry_id)
-        coordinator.async_unload()
+        coordinator: DomoLinkTadoLightCoordinator = hass.data[DOMAIN].pop(entry.entry_id, None)
+        if coordinator:
+            coordinator.async_unload()
+        if not hass.data[DOMAIN]:
+            hass.data.pop(DOMAIN, None)
+            hass.services.async_remove(DOMAIN, SERVICE_RESUME_ALL)
+            hass.services.async_remove(DOMAIN, SERVICE_TURN_OFF_ALL)
+            hass.services.async_remove(DOMAIN, SERVICE_SMART_BOOST)
+            hass.services.async_remove(DOMAIN, SERVICE_SET_ECO_MODE)
 
     return unload_ok
 
