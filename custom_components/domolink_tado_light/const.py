@@ -5,7 +5,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "domolink_tado_light"
 NAME = "DomoLink-Tado-Light"
-VERSION = "1.0.4"
+VERSION = "1.0.5"
 
 # Configuration Entry keys
 CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"
