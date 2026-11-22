@@ -62,6 +62,7 @@ def update_heating_rate(
     clamped_measured = max(0.5, min(measured_rate, 6.0))
 
     new_rate = (0.8 * current_rate) + (0.2 * clamped_measured)
+    new_rate = max(0.2, min(new_rate, 5.0))
     return round(new_rate, 2)
 
 

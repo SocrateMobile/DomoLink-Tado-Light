@@ -1,20 +1,11 @@
 """Constants for DomoLink-Tado-Light."""
 from __future__ import annotations
 
-import json
-import os
 from homeassistant.const import Platform
 
 DOMAIN = "domolink_tado_light"
 NAME = "DomoLink-Tado-Light"
-
-# Lecture dynamique de la version depuis manifest.json
-_MANIFEST_PATH = os.path.join(os.path.dirname(__file__), "manifest.json")
-try:
-    with open(_MANIFEST_PATH, "r", encoding="utf-8") as _f:
-        VERSION = json.load(_f).get("version", "1.0.0")
-except Exception:
-    VERSION = "1.0.0"
+VERSION = "1.0.4"
 
 # Configuration Entry keys
 CONF_OUTDOOR_TEMP_ENTITY = "outdoor_temp_entity"

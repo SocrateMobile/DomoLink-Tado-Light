@@ -2,79 +2,79 @@
   "config": {
     "step": {
       "user": {
-        "title": "Configuration générale DomoLink-Tado-Light",
-        "description": "Configurez les paramètres généraux de confort et vos sondes météo extérieures.",
+        "title": "General Configuration DomoLink-Tado-Light",
+        "description": "Configure global comfort settings and outdoor weather sensors.",
         "data": {
-          "outdoor_temp_entity": "Sonde de température extérieure",
-          "outdoor_humidity_entity": "Sonde d'humidité extérieure",
-          "default_eco_temp": "Température du mode Éco Global (°C)",
-          "smart_boost_temp": "Température du Boost Intelligent (°C)",
-          "smart_boost_duration": "Durée du Boost Intelligent (minutes)"
-        }
-      },
-      "auto_detect": {
-        "title": "Détection automatique Tado",
-        "description": "Nous avons détecté {count} thermostat(s) depuis **{source}**.\n\nVoulez-vous les importer automatiquement dans DomoLink-Tado-Light ?",
-        "data": {
-          "use_auto_detected": "Importer automatiquement les thermostats détectés",
-          "selected_rooms": "Thermostats à importer"
+          "outdoor_temp_entity": "Outdoor temperature sensor",
+          "outdoor_humidity_entity": "Outdoor humidity sensor",
+          "default_eco_temp": "Global Eco mode temperature (°C)",
+          "smart_boost_temp": "Smart Boost temperature (°C)",
+          "smart_boost_duration": "Smart Boost duration (minutes)"
         }
       },
       "add_room": {
-        "title": "Ajouter une pièce / zone",
-        "description": "Associez votre thermostat existant à vos capteurs d'ambiance et de fenêtre ({rooms_count} pièce(s) enregistrée(s)).",
+        "title": "Add a room / zone",
+        "description": "Link your existing thermostat with ambient and window sensors ({rooms_count} room(s) configured).",
         "data": {
-          "name": "Nom de la pièce",
-          "climate_entity": "Entité Thermostat (Climate)",
-          "temp_entity": "Sonde de température d'ambiance externe (Optionnel)",
-          "humidity_entity": "Sonde d'humidité externe (Optionnel)",
-          "window_entity": "Capteur d'ouverture fenêtre (Optionnel)",
-          "heating_rate": "Vitesse de chauffe estimée (°C/h)",
-          "action": "Action suivante"
+          "name": "Room name",
+          "climate_entity": "Thermostat entity (Climate)",
+          "temp_entity": "External ambient temperature sensor (Optional)",
+          "humidity_entity": "External humidity sensor (Optional)",
+          "window_entity": "Window opening sensor (Optional)",
+          "heating_rate": "Estimated heating rate (°C/h)",
+          "action": "Next action"
+        }
+      },
+      "auto_detect": {
+        "title": "Automatic Tado Detection",
+        "description": "We detected {count} thermostat(s) from **{source}**.\n\nDo you want to automatically import them into DomoLink-Tado-Light?",
+        "data": {
+          "use_auto_detected": "Automatically import detected thermostats",
+          "selected_rooms": "Thermostats to import"
         }
       }
     },
     "abort": {
-      "already_configured": "Cette intégration est déjà configurée."
+      "already_configured": "This integration is already configured."
     }
   },
   "options": {
     "step": {
       "init": {
-        "title": "Gestion DomoLink-Tado-Light",
-        "description": "Que souhaitez-vous configurer ?",
+        "title": "Manage DomoLink-Tado-Light",
+        "description": "What would you like to configure?",
         "data": {
           "choice": "Action"
         }
       },
       "general": {
-        "title": "Paramètres généraux",
-        "description": "Modifiez les consignes globales Éco et Boost.",
+        "title": "General settings",
+        "description": "Update global Eco and Boost settings.",
         "data": {
-          "outdoor_temp_entity": "Sonde de température extérieure",
-          "outdoor_humidity_entity": "Sonde d'humidité extérieure",
-          "default_eco_temp": "Température du mode Éco Global (°C)",
-          "smart_boost_temp": "Température du Boost Intelligent (°C)",
-          "smart_boost_duration": "Durée du Boost Intelligent (minutes)"
+          "outdoor_temp_entity": "Outdoor temperature sensor",
+          "outdoor_humidity_entity": "Outdoor humidity sensor",
+          "default_eco_temp": "Global Eco mode temperature (°C)",
+          "smart_boost_temp": "Smart Boost temperature (°C)",
+          "smart_boost_duration": "Smart Boost duration (minutes)"
         }
       },
       "add_room": {
-        "title": "Ajouter une pièce",
-        "description": "Renseignez les entités de la nouvelle pièce.",
+        "title": "Add a room",
+        "description": "Configure the entities for the new room.",
         "data": {
-          "name": "Nom de la pièce",
-          "climate_entity": "Entité Thermostat (Climate)",
-          "temp_entity": "Sonde de température d'ambiance",
-          "humidity_entity": "Sonde d'humidité",
-          "window_entity": "Capteur de fenêtre",
-          "heating_rate": "Vitesse de chauffe (°C/h)"
+          "name": "Room name",
+          "climate_entity": "Thermostat entity (Climate)",
+          "temp_entity": "Ambient temperature sensor",
+          "humidity_entity": "Humidity sensor",
+          "window_entity": "Window sensor",
+          "heating_rate": "Heating rate (°C/h)"
         }
       },
       "remove_room": {
-        "title": "Supprimer une pièce",
-        "description": "Choisissez la pièce à retirer.",
+        "title": "Remove a room",
+        "description": "Choose which room to remove.",
         "data": {
-          "room_to_remove": "Pièce à supprimer"
+          "room_to_remove": "Room to remove"
         }
       }
     }

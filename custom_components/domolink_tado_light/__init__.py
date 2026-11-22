@@ -36,7 +36,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     combined_data = {**entry.data, **entry.options}
-    coordinator = DomoLinkTadoLightCoordinator(hass, combined_data)
+    coordinator = DomoLinkTadoLightCoordinator(hass, combined_data, entry=entry)
 
     await coordinator.async_setup()
     await coordinator.async_config_entry_first_refresh()

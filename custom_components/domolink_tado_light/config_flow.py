@@ -12,6 +12,7 @@ from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import entity_registry as er, selector
+from homeassistant.util import slugify
 
 from .const import (
     CONF_DEFAULT_ECO_TEMP,
@@ -38,6 +39,20 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+def _generate_unique_room_id(
+    room_name: str, existing_rooms: list[dict[str, Any]]
+) -> str:
+    """Generate a unique slugified room ID."""
+    base_id = slugify(room_name) or "room"
+    existing_ids = {r.get(CONF_ROOM_ID) for r in existing_rooms if r.get(CONF_ROOM_ID)}
+    room_id = base_id
+    counter = 2
+    while room_id in existing_ids:
+        room_id = f"{base_id}_{counter}"
+        counter += 1
+    return room_id
+
+
 class DomoLinkTadoLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for DomoLink-Tado-Light."""
 
@@ -57,7 +72,7 @@ class DomoLinkTadoLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # 1. Test présence Tado officiel
         official_tado = [
             entry for entry in ent_reg.entities.values()
-            if entry.domain == CLIMATE_DOMAIN and entry.platform == "tado" and not entry.disabled
+            if entry.domain == CLIMATE_DOMAIN and entry.platform == "tado" and entry.disabled_by is None
         ]
         if official_tado:
             rooms = [
@@ -73,7 +88,7 @@ class DomoLinkTadoLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # 2. En fallback, test présence DomoLink-Tado
         domolink_tado = [
             entry for entry in ent_reg.entities.values()
-            if entry.domain == CLIMATE_DOMAIN and entry.platform == "domolink_tado" and not entry.disabled
+            if entry.domain == CLIMATE_DOMAIN and entry.platform == "domolink_tado" and entry.disabled_by is None
         ]
         if domolink_tado:
             rooms = [
@@ -155,7 +170,7 @@ class DomoLinkTadoLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 selected_entities = user_input.get("selected_rooms", [c for _, c in self._detected_rooms])
                 for name, climate_id in self._detected_rooms:
                     if climate_id in selected_entities:
-                        room_id = name.lower().replace(" ", "_")
+                        room_id = _generate_unique_room_id(name, self._rooms)
                         self._rooms.append({
                             CONF_ROOM_ID: room_id,
                             CONF_ROOM_NAME: name,
@@ -202,22 +217,25 @@ class DomoLinkTadoLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             action = user_input.get("action")
+
+            # Enregistrer la pièce si renseignée (y compris lors de "finish")
+            room_name = (user_input.get(CONF_ROOM_NAME) or "").strip()
+            climate_entity = user_input.get(CONF_ROOM_CLIMATE_ENTITY)
+            if room_name and climate_entity:
+                room_id = _generate_unique_room_id(room_name, self._rooms)
+                self._rooms.append({
+                    CONF_ROOM_ID: room_id,
+                    CONF_ROOM_NAME: room_name,
+                    CONF_ROOM_CLIMATE_ENTITY: climate_entity,
+                    CONF_ROOM_TEMP_ENTITY: user_input.get(CONF_ROOM_TEMP_ENTITY),
+                    CONF_ROOM_HUMIDITY_ENTITY: user_input.get(CONF_ROOM_HUMIDITY_ENTITY),
+                    CONF_ROOM_WINDOW_ENTITY: user_input.get(CONF_ROOM_WINDOW_ENTITY),
+                    CONF_HEATING_RATE: user_input.get(CONF_HEATING_RATE, DEFAULT_HEATING_RATE),
+                })
+
             if action == "finish":
                 self._entry_data[CONF_ROOMS] = self._rooms
                 return self.async_create_entry(title=NAME, data=self._entry_data)
-
-            # Enregistrer la pièce
-            room_name = user_input[CONF_ROOM_NAME].strip()
-            room_id = room_name.lower().replace(" ", "_")
-            self._rooms.append({
-                CONF_ROOM_ID: room_id,
-                CONF_ROOM_NAME: room_name,
-                CONF_ROOM_CLIMATE_ENTITY: user_input.get(CONF_ROOM_CLIMATE_ENTITY),
-                CONF_ROOM_TEMP_ENTITY: user_input.get(CONF_ROOM_TEMP_ENTITY),
-                CONF_ROOM_HUMIDITY_ENTITY: user_input.get(CONF_ROOM_HUMIDITY_ENTITY),
-                CONF_ROOM_WINDOW_ENTITY: user_input.get(CONF_ROOM_WINDOW_ENTITY),
-                CONF_HEATING_RATE: user_input.get(CONF_HEATING_RATE, DEFAULT_HEATING_RATE),
-            })
 
             # Proposer d'ajouter une autre pièce
             return await self.async_step_add_room()
@@ -263,23 +281,24 @@ class DomoLinkTadoLightConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         config_entry: config_entries.ConfigEntry,
     ) -> config_entries.OptionsFlow:
         """Create the options flow."""
-        return DomoLinkTadoLightOptionsFlowHandler(config_entry)
+        return DomoLinkTadoLightOptionsFlowHandler()
 
 
 class DomoLinkTadoLightOptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for DomoLink-Tado-Light."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        self._rooms: list[dict[str, Any]] = list(
-            config_entry.options.get(CONF_ROOMS, config_entry.data.get(CONF_ROOMS, []))
-        )
-
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage main options menu."""
+        if not hasattr(self, "_rooms"):
+            self._rooms: list[dict[str, Any]] = [
+                dict(r)
+                for r in self.config_entry.options.get(
+                    CONF_ROOMS, self.config_entry.data.get(CONF_ROOMS, [])
+                )
+            ]
+
         if user_input is not None:
             choice = user_input.get("choice")
             if choice == "general":
@@ -313,16 +332,25 @@ class DomoLinkTadoLightOptionsFlowHandler(config_entries.OptionsFlow):
             new_options = {**self.config_entry.options, **user_input, CONF_ROOMS: self._rooms}
             return self.async_create_entry(title="", data=new_options)
 
+        outdoor_temp = current_data.get(CONF_OUTDOOR_TEMP_ENTITY)
+        outdoor_humidity = current_data.get(CONF_OUTDOOR_HUMIDITY_ENTITY)
+        temp_kwargs: dict[str, Any] = {}
+        if outdoor_temp is not None:
+            temp_kwargs["description"] = {"suggested_value": outdoor_temp}
+        hum_kwargs: dict[str, Any] = {}
+        if outdoor_humidity is not None:
+            hum_kwargs["description"] = {"suggested_value": outdoor_humidity}
+
         schema = vol.Schema({
             vol.Optional(
                 CONF_OUTDOOR_TEMP_ENTITY,
-                default=current_data.get(CONF_OUTDOOR_TEMP_ENTITY),
+                **temp_kwargs,
             ): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="sensor", device_class=SensorDeviceClass.TEMPERATURE)
             ),
             vol.Optional(
                 CONF_OUTDOOR_HUMIDITY_ENTITY,
-                default=current_data.get(CONF_OUTDOOR_HUMIDITY_ENTITY),
+                **hum_kwargs,
             ): selector.EntitySelector(
                 selector.EntitySelectorConfig(domain="sensor", device_class=SensorDeviceClass.HUMIDITY)
             ),
@@ -353,7 +381,7 @@ class DomoLinkTadoLightOptionsFlowHandler(config_entries.OptionsFlow):
         """Add a room via options flow."""
         if user_input is not None:
             room_name = user_input[CONF_ROOM_NAME].strip()
-            room_id = room_name.lower().replace(" ", "_")
+            room_id = _generate_unique_room_id(room_name, self._rooms)
             self._rooms.append({
                 CONF_ROOM_ID: room_id,
                 CONF_ROOM_NAME: room_name,

@@ -11,11 +11,11 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_ROOM_ID, CONF_ROOM_NAME, CONF_ROOMS, DOMAIN, NAME
+from .const import CONF_ROOM_ID, CONF_ROOM_NAME, DOMAIN, NAME
 from .coordinator import DomoLinkTadoLightCoordinator
 
 
@@ -186,6 +186,12 @@ class DomoLinkPreheatDurationSensor(DomoLinkBaseRoomSensor):
     def native_value(self) -> int:
         return self.room_data.get("preheat_duration", 0)
 
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "preheat_active": bool(self.room_data.get("preheat_active", False)),
+        }
+
 
 class DomoLinkHeatingRateSensor(DomoLinkBaseRoomSensor):
     """Observed heating rate sensor."""
@@ -202,6 +208,13 @@ class DomoLinkHeatingRateSensor(DomoLinkBaseRoomSensor):
     @property
     def native_value(self) -> float:
         return self.room_data.get("heating_rate", 1.5)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        return {
+            "configured_rate": self.room_data.get("configured_rate"),
+            "is_learned": bool(self.room_data.get("is_learned", False)),
+        }
 
 
 # =============================================================================

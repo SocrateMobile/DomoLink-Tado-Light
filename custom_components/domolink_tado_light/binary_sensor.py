@@ -9,11 +9,11 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_ROOM_ID, CONF_ROOM_NAME, CONF_ROOMS, DOMAIN, NAME
+from .const import CONF_ROOM_ID, CONF_ROOM_NAME, DOMAIN, NAME
 from .coordinator import DomoLinkTadoLightCoordinator
 
 

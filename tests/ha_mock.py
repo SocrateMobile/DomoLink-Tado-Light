@@ -82,11 +82,14 @@ def setup_ha_mock():
             self.data = data or {}
             self.context = context
 
+    from typing import Any, Callable
     ha_core.HomeAssistant = HomeAssistant
     ha_core.ServiceCall = ServiceCall
     ha_core.callback = callback
     ha_core.State = State
     ha_core.SupportsResponse = SupportsResponse
+    ha_core.CALLBACK_TYPE = Callable[[], None]
+    ha_core.Event = MagicMock
     sys.modules["homeassistant.core"] = ha_core
 
     # homeassistant.const
@@ -102,6 +105,10 @@ def setup_ha_mock():
     ha_const.CONF_NAME = "name"
     ha_const.CONF_CODE = "code"
     ha_const.ATTR_ENTITY_ID = "entity_id"
+    ha_const.STATE_ON = "on"
+    ha_const.STATE_OPEN = "open"
+    ha_const.STATE_UNAVAILABLE = "unavailable"
+    ha_const.STATE_UNKNOWN = "unknown"
 
     class Platform:
         CLIMATE = "climate"
@@ -122,7 +129,14 @@ def setup_ha_mock():
     # homeassistant.util
     ha_util = types.ModuleType("homeassistant.util")
     ha_util.__path__ = []
+    import re
+    ha_util.slugify = lambda text: re.sub(r"[^a-z0-9]+", "_", str(text).lower()).strip("_")
     sys.modules["homeassistant.util"] = ha_util
+
+    # homeassistant.data_entry_flow
+    ha_def = types.ModuleType("homeassistant.data_entry_flow")
+    ha_def.FlowResult = dict
+    sys.modules["homeassistant.data_entry_flow"] = ha_def
 
     # homeassistant.util.dt
     ha_dt = types.ModuleType("homeassistant.util.dt")
@@ -250,6 +264,7 @@ def setup_ha_mock():
     ha_event = types.ModuleType("homeassistant.helpers.event")
     ha_event.async_track_time_interval = MagicMock(return_value=lambda: None)
     ha_event.async_track_state_change_event = MagicMock(return_value=lambda: None)
+    ha_event.async_track_point_in_time = MagicMock(return_value=lambda: None)
     ha_event.async_call_later = MagicMock(return_value=lambda: None)
     ha_event.async_track_time_change = MagicMock(return_value=lambda: None)
     sys.modules["homeassistant.helpers.event"] = ha_event
@@ -278,8 +293,19 @@ def setup_ha_mock():
 
     # homeassistant.helpers.selector
     ha_selector = types.ModuleType("homeassistant.helpers.selector")
-    ha_selector.SelectSelector = MagicMock()
-    ha_selector.TextSelector = MagicMock()
+    for sel_name in (
+        "SelectSelector",
+        "SelectSelectorConfig",
+        "SelectSelectorMode",
+        "SelectOptionDict",
+        "TextSelector",
+        "EntitySelector",
+        "EntitySelectorConfig",
+        "NumberSelector",
+        "NumberSelectorConfig",
+        "BooleanSelector",
+    ):
+        setattr(ha_selector, sel_name, MagicMock())
     sys.modules["homeassistant.helpers.selector"] = ha_selector
 
     # homeassistant.components.websocket_api
@@ -312,6 +338,9 @@ def setup_ha_mock():
             self.hass = hass
             self.data = {}
             self.name = name
+            self.config_entry = kwargs.get("config_entry")
+        def async_set_updated_data(self, data):
+            self.data = data
     ha_coord.DataUpdateCoordinator = DataUpdateCoordinatorMock
     sys.modules["homeassistant.helpers.update_coordinator"] = ha_coord
 
@@ -327,8 +356,53 @@ def setup_ha_mock():
             self.entry_id = entry_id
             self.data = data or {}
             self.options = options or {}
+
+    class ConfigFlow:
+        def __init_subclass__(cls, **kwargs):
+            super().__init_subclass__()
+        def async_show_form(self, **kwargs):
+            return {"type": "form", **kwargs}
+        def async_create_entry(self, **kwargs):
+            return {"type": "create_entry", **kwargs}
+
+    class OptionsFlow:
+        _config_entry = None
+        @property
+        def config_entry(self):
+            return self._config_entry
+        def async_show_form(self, **kwargs):
+            return {"type": "form", **kwargs}
+        def async_create_entry(self, **kwargs):
+            return {"type": "create_entry", **kwargs}
+
     ha_config_entries.ConfigEntry = ConfigEntry
+    ha_config_entries.ConfigFlow = ConfigFlow
+    ha_config_entries.OptionsFlow = OptionsFlow
     sys.modules["homeassistant.config_entries"] = ha_config_entries
+
+    # homeassistant.components.climate
+    ha_climate = types.ModuleType("homeassistant.components.climate")
+    ha_climate.DOMAIN = "climate"
+    ha_climate.ATTR_CURRENT_TEMPERATURE = "current_temperature"
+    ha_climate.ATTR_HVAC_MODE = "hvac_mode"
+    ha_climate.ATTR_TEMPERATURE = "temperature"
+    ha_climate.SERVICE_SET_HVAC_MODE = "set_hvac_mode"
+    ha_climate.SERVICE_SET_TEMPERATURE = "set_temperature"
+    class HVACMode:
+        OFF = "off"
+        HEAT = "heat"
+        AUTO = "auto"
+    ha_climate.HVACMode = HVACMode
+    sys.modules["homeassistant.components.climate"] = ha_climate
+
+    # homeassistant.components.sensor
+    ha_sensor = types.ModuleType("homeassistant.components.sensor")
+    class SensorDeviceClass:
+        TEMPERATURE = "temperature"
+        HUMIDITY = "humidity"
+        DURATION = "duration"
+    ha_sensor.SensorDeviceClass = SensorDeviceClass
+    sys.modules["homeassistant.components.sensor"] = ha_sensor
 
     # homeassistant.components.recorder
     ha_rec = types.ModuleType("homeassistant.components.recorder")
